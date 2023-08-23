@@ -485,7 +485,7 @@ public:
     }
   }
 
-  bool headCmpEx(u64* expected, au64 desired)
+  bool headCmpEx(u64* expected, u64* desired)
   {
     using namespace std;
 
@@ -497,9 +497,9 @@ public:
     //return atomic_compare_exchange_strong(
     //  s_h, (volatile au64*)&expected, desired
     //);
-
+    u64 desired_u64 = au64(*desired);
     return atomic_compare_exchange_strong_explicit(
-      s_h, expected, desired,
+      s_h, expected, desired_u64,
       memory_order_seq_cst, memory_order_seq_cst
     );
   }
@@ -514,7 +514,7 @@ public:
 
       nxtHead.idx  =  s_lv[curHead.idx];
       nxtHead.ver  =  curHead.ver==NXT_VER_SPECIAL? 1  :  curHead.ver+1;
-    }while( !headCmpEx( &curHead.asInt, nxtHead.asInt) );
+    }while( !headCmpEx( &curHead.asInt, &nxtHead.asInt) );
     //}while( !headCmpEx(curHead.asInt, nxtHead.asInt) );
     //}while( !s_h->compare_exchange_strong(curHead.asInt, nxtHead.asInt) );
 
@@ -534,7 +534,7 @@ public:
       prevHead     =  curHead;
       nxtHead.idx  =  s_lv[curHead.idx];
       nxtHead.ver  =  curHead.ver==NXT_VER_SPECIAL? 1  :  curHead.ver+1;
-    }while( !headCmpEx( &curHead.asInt, nxtHead.asInt) );
+    }while( !headCmpEx( &curHead.asInt, &nxtHead.asInt) );
     //}while( !headCmpEx(curHead.asInt, nxtHead.asInt) );
     //}while( !s_h->compare_exchange_strong(curHead.asInt, nxtHead.asInt) );
 
@@ -551,7 +551,7 @@ public:
       retIdx = s_lv[idx] = curHead.idx;
       nxtHead.idx  =  idx;
       nxtHead.ver  =  curHead.ver + 1;
-    }while( !headCmpEx( &curHead.asInt, nxtHead.asInt) );
+    }while( !headCmpEx( &curHead.asInt, &nxtHead.asInt) );
     //}while( !headCmpEx(curHead.asInt, nxtHead.asInt) );
     //}while( !s_h->compare_exchange_strong(curHead.asInt, nxtHead.asInt) );
 
@@ -570,7 +570,7 @@ public:
       //atomic_store( (au32*)&(s_lv[en]), curHead.idx);
       nxtHead.idx  =  st;
       nxtHead.ver  =  curHead.ver + 1;
-    }while( !headCmpEx( &curHead.asInt, nxtHead.asInt) );
+    }while( !headCmpEx( &curHead.asInt, &nxtHead.asInt) );
     //}while( !headCmpEx(curHead.asInt, nxtHead.asInt) );
     //}while( !s_h->compare_exchange_strong(curHead.asInt, nxtHead.asInt) );
 
@@ -1226,7 +1226,7 @@ private:
   //bool       runIfMatch(VerIdx vi, const void* const buf, u32 len, u32 hash, FUNC f) const 
   //Match       runIfMatch(VerIdx vi, const void* const buf, u32 len, u32 hash, FUNC f) const 
   template<class FUNC, class T>
-  auto       runIfMatch(VerIdx vi, const void* const buf, u32 len, u32 hash, FUNC f, T defaultRet = decltype(f(vi))() ) const -> std::pair<Match, T>   // std::pair<Match, decltype(f(vi))>
+  auto       runIfMatch(VerIdx vi, const void* const buf, u32 len, u32 hash, FUNC f, T defaultRet ) const -> std::pair<Match, T>   // std::pair<Match, decltype(f(vi))>
   { 
     Match m;
     T funcRet = defaultRet;                                                                   
@@ -1344,7 +1344,7 @@ public:
   }
 
   template<class FUNC, class T>
-  bool      runMatch(const void *const key, u32 klen, u32 hash, FUNC f, T defaultRet = decltype(f(vi))() )       const 
+  bool      runMatch(const void *const key, u32 klen, u32 hash, FUNC f, T defaultRet)       const
   {
     using namespace std;
     
